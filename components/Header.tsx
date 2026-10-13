@@ -1,12 +1,20 @@
 'use client'
-
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon } from './Icon'
 import { SocialLoginButton } from './SocialLoginButton'
 
 export function Header() {
-  const inRoom = usePathname().startsWith('/room')
+  const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const inRoom = mounted && pathname ? pathname.startsWith('/room') : false
+
   return <header className="site-header">
     <div className="header-inner">
       <Link href="/" className="brand"><span className="brand-mark"><Icon name="leaf" size={24} /></span><span>목지키미<span className="brand-dot">.</span></span></Link>
