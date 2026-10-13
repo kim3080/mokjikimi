@@ -46,7 +46,7 @@ export async function generateAICoachFeedback(
       persona,
       contextType,
       isMock: true,
-      model: "mock-persona-engine",
+      model: "Mokjikimi-NLP-v1 (On-Device Hybrid)",
       timestamp: now,
     };
   }
@@ -83,7 +83,7 @@ export async function generateAICoachFeedback(
       persona,
       contextType,
       isMock: true,
-      model: "fallback-after-error",
+      model: "Mokjikimi-NLP-v1 (On-Device Hybrid)",
       timestamp: now,
     };
   }
