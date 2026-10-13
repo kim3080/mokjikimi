@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌿 목지키미 (Mokjikimi)
 
-## Getting Started
+> **"바른 자세로, 함께 오래."**  
+> AI 온디바이스 자세 감지와 함께하는 소셜 뽀모도로 스터디룸 플랫폼  
+> **2026학년도 졸업작품 전시회 프로젝트 · 힘들조**
 
-First, run the development server:
+---
 
+## 👥 팀원 소개 (힘들조)
+
+| 이름 | 역할 | 담당 업무 |
+| :---: | :---: | :--- |
+| **김재호** | **Team Lead / Full-Stack** | 시스템 아키텍처 설계, 타이머 실시간 동기화, 인증 및 전반적인 프로젝트 총괄 |
+| **박진규** | **Frontend Engineer** | 사용자 경험(UX) 및 반응형 스터디룸 인터페이스 구현, 소셜 컴포넌트 개발 |
+| **안정민** | **AI Vision Engineer** | MediaPipe 관절 랜드마크 추출, 체형 맞춤형 영점 조절 및 거북목 판별 알고리즘 구현 |
+
+---
+
+## 💡 기획 의도 및 프로젝트 개요
+
+장시간 모니터를 보며 공부하거나 작업하는 현대인들에게 **거북목 증후군**과 **집중력 저하**는 피할 수 없는 문제입니다.  
+기존의 자세 교정 앱들은 단순 알림에 그치거나, 카메라 영상이 외부 서버로 유출될 수 있다는 **개인정보 침해 우려**가 있었습니다.
+
+**목지키미**는 이러한 한계를 극복하기 위해:
+1. **100% 온디바이스(On-Device) AI 연산**: 웹캠 영상을 서버로 절대 전송하지 않고 브라우저 내부에서만 실시간 분석하여 프라이버시를 완벽히 보장합니다.
+2. **소셜 뽀모도로 타이머**: 혼자가 아닌 스터디원들과 같은 타이머 주기로 함께 달리며 건강한 집중 습관을 형성합니다.
+3. **체형 맞춤형 영점 조절**: 개인마다 다른 앉은 키와 카메라 각도를 보정하여 오탐지를 획기적으로 줄였습니다.
+
+---
+
+## ✨ 핵심 기능
+
+### 1. 🎯 AI 골격 추적 & 체형 맞춤형 영점 조절 (Calibration)
+* **MediaPipe Pose Landmarker**를 활용하여 귀-어깨-코의 공간 좌표(Y축 각도 및 Z축 뎁스)를 실시간 추적합니다.
+* 사용자가 바른 자세를 취한 후 **`[🎯 바른 자세 영점 맞추기]`**를 누르면 개인 기준치가 등록되어, 체형이나 의자 높이에 구애받지 않고 기준치 대비 15% 이상 하강/돌출 시에만 정확하게 거북목을 판정합니다.
+
+### 2. 📹 독립 제어 듀얼 모니터링 (Dual Viewport)
+* **뷰 1 (실시간 원본 웹캠)**: 내 모습을 편안하게 확인할 수 있는 고화질 웹캠 뷰.
+* **뷰 2 (AI 골격 추적 & 진단)**: AI 뼈대 선과 실시간 자세 점수, 거북목 위험 경고 오버레이를 표시하는 분석 뷰.
+* 각 뷰포트는 독립적인 **ON/OFF 토글**을 제공하여 사용자가 원하는 화면만 선택적으로 켜둘 수 있습니다.
+* Windows 가상 카메라/스마트폰 연동 스트림을 차단하고 노트북 내장 카메라(`LG HD Webcam`)로 최적화 연결됩니다.
+
+### 3. ⏱️ 함께 도는 공동 뽀모도로 타이머
+* **`25분 집중 · 5분 휴식`** 및 **`50분 집중 · 10분 휴식`** 표준 주기를 원클릭으로 전환 가능합니다.
+* 전시회 심사용 **`1분 집중 · 1분 휴식 (시연용)`** 프리셋을 로비에서 제공합니다.
+* 방에 있는 모든 참여자의 타이머가 실시간으로 완벽하게 동기화됩니다.
+
+### 4. 🤖 AI 자세 코칭 피드백 (힐러 vs 팩폭 모드)
+* 실시간 자세 분석 데이터와 집중 시간을 분석하여 개인화된 코칭 피드백을 제공합니다.
+* **🌿 힐러 모드**: 지친 마음을 다독이고 부드럽게 바른 자세를 권장하는 따뜻한 코칭.
+* **💥 팩폭 모드**: 직설적이고 유쾌한 팩트 폭격으로 경각심을 깨우는 스파르타 코칭.
+
+### 5. 👥 힘들조 소셜 스터디룸 & 프라이버시 보호
+* 참가자 카드에는 **타이머 상태와 자세 상태(바름/주의/경고)**만 안전하게 공유됩니다.
+* 전시회 시연을 위해 우측 상단 **`[👥 팀원 연동 데모]`** 버튼을 통해 팀원들의 실시간 협업 상태를 시뮬레이션할 수 있습니다.
+
+---
+
+## 🛠️ 기술 스택 (Tech Stack)
+
+### Client & Framework
+* **Next.js 16.3.5 (App Router, Turbopack)**
+* **React 19.2.8**
+* **TypeScript 5**
+* **Tailwind CSS v4**
+
+### AI & Computer Vision
+* **Google MediaPipe Tasks Vision (`@mediapipe/tasks-vision`)**
+* **HTML5 Canvas 2D Rendering Engine**
+* **OpenAI GPT-4o-mini / Mokjikimi-NLP Engine**
+
+### Backend & Realtime Database
+* **Firebase Firestore (실시간 트랜잭션 동기화)**
+* **Firebase Authentication (익명 로그인 & Google 소셜 연동)**
+
+---
+
+## 🚀 빠른 시작 (Getting Started)
+
+### 1. 패키지 설치
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 개발 서버 실행
+```bash
+npm run dev -p 3001
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+브라우저에서 `http://localhost:3001`에 접속하여 스터디룸을 이용하실 수 있습니다.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 프로덕션 빌드
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🔒 프라이버시 선언 (Privacy First)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> **"웹캠 영상은 절대 브라우저 밖으로 전송되지 않습니다."**  
+> 모든 이미지 프레임 처리는 사용자 기기의 GPU/CPU 내(WebAssembly)에서 로컬 연산되며, 데이터베이스에는 텍스트 형태의 자세 상태('perfect' | 'warning' | 'slouching')와 세션 점수만이 기록됩니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+© 2026 힘들조 (Kim Jaeho, Park Jingyu, Ahn Jeongmin). All rights reserved.
