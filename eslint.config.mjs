@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 디자인 참고용 Vite 프로토타입 (별도 프로젝트)
+    "mokjikimiweb/**",
   ]),
 ]);
 

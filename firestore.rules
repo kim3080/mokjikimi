@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 개발/테스트 및 Firebase Auth 연동 과도기에도 원활히 작동하도록 기본 허용
+    function signedIn() {
+      return true;
+    }
+
+    match /rooms/{roomId} {
+      allow read, write: if true;
+
+      match /members/{uid} {
+        allow read, write: if true;
+      }
+    }
+
+    // ----------------------------------------------------
+    // 사용자별 프로필 및 캡처 로그 (6주차 - 김재호)
+    // ----------------------------------------------------
+    match /users/{uid} {
+      allow read, write: if true;
+
+      match /posture_logs/{logId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}
