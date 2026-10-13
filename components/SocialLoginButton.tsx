@@ -1,14 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Icon } from "@/components/Icon";
 
 export function SocialLoginButton() {
+  const [mounted, setMounted] = useState(false);
   const { user, profile, isLoading, loginWithGoogle, logout } = useAuth();
 
-  if (isLoading) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-neutral-400">
+      <div className="flex items-center gap-2 text-xs text-neutral-400" suppressHydrationWarning>
         <span className="inline-block w-3 h-3 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
         계정 확인 중...
       </div>

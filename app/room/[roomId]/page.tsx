@@ -40,6 +40,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
   const { remainingMs, serverNow } = useSharedTimer(room, serverOffsetMs)
   const [copied, setCopied] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
+  const [mounted, setMounted] = useState(false)
   const isRoomReady = room !== null
 
   // 로컬 웹캠 자세 상태 및 스냅샷 URL 실시간 연동
@@ -47,6 +48,10 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
   const [mySnapshotUrl, setMySnapshotUrl] = useState<string | null>(null)
   // 힘들조 팀원 (박진규, 안정민) 목(Mock) 연동 시뮬레이션 상태 (React Hooks 규칙: early return 이전에 선언)
   const [showMockTeam, setShowMockTeam] = useState(true)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => { if (isRoomReady) heading.current?.focus() }, [isRoomReady])
 
@@ -69,14 +74,15 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
     }
   }
 
+  // 하이드레이션 불일치 방지: 클라이언트 마운트 완료 전에는 SSR 트리와 동일한 초기 로딩 패널 반환
+  if (!mounted || isAuthLoading || isLoading) return <StatePanel title="스터디룸에 연결하고 있어요…" />
+
   if (!isFirebaseConfigured) return <StatePanel title="스터디룸"><FirebaseSetupNotice /></StatePanel>
 
   const statusMessage = authError ?? error
   if (statusMessage) return <StatePanel title="연결에 문제가 생겼어요"><p className="field-error">{statusMessage}</p><BackToLobby /></StatePanel>
 
   if (!nickname) return <StatePanel title="스터디룸에 입장하기" description={`방 코드 ${roomId}`}><NicknameForm onSubmit={setNickname} /></StatePanel>
-
-  if (isAuthLoading || isLoading) return <StatePanel title="스터디룸에 연결하고 있어요…" />
 
   if (notFound || !room || !uid) {
     return <StatePanel title="방을 찾을 수 없어요" description="코드가 올바른지, 방이 아직 있는지 확인해 주세요."><BackToLobby /></StatePanel>

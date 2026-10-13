@@ -16,7 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <div className="app-shell">
+        <div className="app-shell" suppressHydrationWarning>
           <a className="skip-link" href="#main-content">
             본문으로 건너뛰기
           </a>

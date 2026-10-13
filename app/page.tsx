@@ -119,7 +119,7 @@ export default function LobbyPage() {
             <form onSubmit={submit} noValidate>
               <div className="field">
                 <label htmlFor="nickname">닉네임</label>
-                <input ref={nicknameInput} id="nickname" autoComplete="nickname" placeholder="어떻게 불러드릴까요?" value={nickname} onChange={e => { setNicknameDraft(e.target.value); setErrors(old => ({ ...old, nickname: undefined })) }} aria-invalid={!!errors.nickname} aria-describedby={errors.nickname ? 'nickname-error' : 'nickname-help'} disabled={busy} />
+                <input ref={nicknameInput} id="nickname" autoComplete="nickname" placeholder="어떻게 불러드릴까요?" value={nickname} onChange={e => { setNicknameDraft(e.target.value); setErrors(old => ({ ...old, nickname: undefined })) }} aria-invalid={!!errors.nickname} aria-describedby={errors.nickname ? 'nickname-error' : 'nickname-help'} disabled={busy} suppressHydrationWarning />
                 {errors.nickname ? <p id="nickname-error" className="field-error" role="alert">{errors.nickname}</p> : <p id="nickname-help" className="field-help">스터디룸에서 사용할 이름 · 최대 12자</p>}
               </div>
               <div className="field">
@@ -133,7 +133,7 @@ export default function LobbyPage() {
                   {TIMER_PRESETS.map((preset, i) => <option key={preset.label} value={i}>{preset.label}</option>)}
                 </select>
               </div>}
-              <button className="primary-button w-full" type="submit" disabled={disabled}>{busy ? '준비하고 있어요…' : !user ? '연결하고 있어요…' : tab === 'create' ? '스터디룸 만들기' : '스터디룸 입장하기'}<Icon name="arrow" size={19} /></button>
+              <button className="primary-button w-full" type="submit" disabled={disabled} suppressHydrationWarning>{busy ? '준비하고 있어요…' : !user ? '연결하고 있어요…' : tab === 'create' ? '스터디룸 만들기' : '스터디룸 입장하기'}<Icon name="arrow" size={19} /></button>
             </form>
           </div>
           {authError && <p className="field-error" role="alert" style={{ marginTop: 16 }}>{authError}</p>}
