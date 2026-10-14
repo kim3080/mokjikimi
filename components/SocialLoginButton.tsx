@@ -61,7 +61,8 @@ export function SocialLoginButton() {
   return (
     <button
       onClick={loginWithGoogle}
-      className="flex items-center gap-2 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 rounded-full px-3.5 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow active:scale-95"
+      disabled={isLoading}
+      className="flex items-center gap-2 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 rounded-full px-3.5 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
     >
       <svg className="w-4 h-4" viewBox="0 0 24 24">
         <path

@@ -2,6 +2,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   linkWithPopup,
+  signInWithCredential,
   signOut,
   type User,
   type UserCredential,
@@ -21,7 +22,7 @@ googleProvider.setCustomParameters({
 
 /**
  * Google 소셜 로그인 실행
- * 만약 현재 사용자가 익명 로그인 상태라면, 기존 uid와 데이터를 보존하기 위해 linkWithPopup을 우선 시도합니다.
+ * 팝업 중복 호출(로그인 요청 2회 발생)을 원천 차단하고, 단 1회의 팝업으로 로그인을 완료합니다.
  */
 export async function signInWithGoogle(): Promise<{ user: User; isNewUser?: boolean; isLinked?: boolean }> {
   if (!isFirebaseConfigured) {
@@ -37,18 +38,25 @@ export async function signInWithGoogle(): Promise<{ user: User; isNewUser?: bool
       const cred: UserCredential = await linkWithPopup(currentUser, googleProvider);
       return { user: cred.user, isLinked: true };
     } catch (linkError: any) {
+      // 사용자가 직접 팝업 창을 닫은 경우 즉시 종료
+      if (linkError.code === "auth/popup-closed-by-user") {
+        throw linkError;
+      }
+
       // 이미 해당 Google 계정이 별도로 등록되어 있는 경우 (credential-already-in-use)
-      // 링크 대신 해당 Google 계정으로 직접 로그인 진행
+      // 중요: 2번째 팝업 창을 띄우지 않고, 1번째 팝업에서 이미 획득한 Google Credential로 백그라운드 전환 로그인!
       if (linkError.code === "auth/credential-already-in-use") {
-        console.warn("해당 Google 계정이 이미 존재하므로 직접 로그인을 진행합니다.");
-        const cred = await signInWithPopup(auth, googleProvider);
-        return { user: cred.user, isLinked: false };
+        const credential = GoogleAuthProvider.credentialFromError(linkError);
+        if (credential) {
+          const cred = await signInWithCredential(auth, credential);
+          return { user: cred.user, isLinked: false };
+        }
       }
       throw linkError;
     }
   }
 
-  // 2. 로그인되어 있지 않거나 이미 일반 계정인 경우 -> Google 팝업 로그인
+  // 2. 로그인되어 있지 않거나 이미 일반 계정인 경우 -> Google 단일 팝업 로그인
   const cred = await signInWithPopup(auth, googleProvider);
   return { user: cred.user, isLinked: false };
 }

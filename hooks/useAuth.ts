@@ -130,8 +130,12 @@ export function useAuth() {
     };
   }, []);
 
+let isLoggingIn = false;
+
   // Google 소셜 로그인 실행
   const handleGoogleLogin = useCallback(async () => {
+    if (isLoggingIn) return null;
+    isLoggingIn = true;
     globalLoading = true;
     globalError = null;
     notifySubscribers();
@@ -154,6 +158,8 @@ export function useAuth() {
       globalError = err?.message || "Google 로그인에 실패했습니다.";
       notifySubscribers();
       return null;
+    } finally {
+      isLoggingIn = false;
     }
   }, []);
 
