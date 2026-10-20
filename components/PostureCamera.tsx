@@ -1,9 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePostureDetection } from '@/hooks/usePostureDetection'
 import type { PostureStatus } from '@/lib/room'
 import { Icon } from './Icon'
+import {
+  playPostureAlertSound,
+  playCalibrationSound,
+  isSoundEnabled,
+  setSoundEnabled,
+} from '@/lib/soundService'
 
 // 자세 상태가 이 시간 이상 유지될 때만 방에 전송 (프레임 단위 깜빡임 방지 + 쓰기 절약)
 const POSTURE_SYNC_DEBOUNCE_MS = 1000
@@ -33,9 +39,33 @@ export function PostureCamera({
   const posture = isDetecting ? (metrics?.status ?? null) : null
   const [calibratedSuccess, setCalibratedSuccess] = useState(false)
 
+  // Web Audio 사운드 알림 On/Off 상태 및 쿨다운 Ref
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled())
+  const lastSoundAlertTimeRef = useRef<number>(0)
+
+  const toggleSound = () => {
+    setSoundOn((prev) => {
+      const next = !prev
+      setSoundEnabled(next)
+      if (next) playCalibrationSound() // 켤 때 가벼운 확인음
+      return next
+    })
+  }
+
+  // [EXPO 사운드 알림] 거북목/자세 붕괴 감지 시 실시간 스마트 차임벨 재생 (3.5초 쿨다운)
+  useEffect(() => {
+    if (!isSlouching) return
+    const now = performance.now()
+    if (now - lastSoundAlertTimeRef.current > 3500) {
+      lastSoundAlertTimeRef.current = now
+      playPostureAlertSound()
+    }
+  }, [isSlouching])
+
   const handleCalibrate = () => {
     const ok = calibrate()
     if (ok) {
+      playCalibrationSound()
       setCalibratedSuccess(true)
       setTimeout(() => setCalibratedSuccess(false), 2500)
     }
@@ -122,7 +152,19 @@ export function PostureCamera({
             {isExpanded ? '🗖 화면 확대 모드' : '⊞ 표준 분할 모드'}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={toggleSound}
+            className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-colors shadow-2xs ${
+              soundOn
+                ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                : 'bg-neutral-100 text-neutral-500 border-neutral-300 hover:bg-neutral-200'
+            }`}
+            title={soundOn ? '소리 알림 끄기 (음소거)' : '소리 알림 켜기'}
+          >
+            {soundOn ? '🔔 소리 켜짐' : '🔕 음소거'}
+          </button>
           <button
             type="button"
             onClick={toggleExpanded}

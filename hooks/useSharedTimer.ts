@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { advanceIfExpired, getRemainingMs, type Room } from "@/lib/room";
+import { playTimerChimeSound } from "@/lib/soundService";
 
 const TICK_MS = 250;
 
@@ -22,10 +23,11 @@ export function useSharedTimer(room: Room | null, serverOffsetMs: number) {
   const roomId = room?.id;
   const version = room?.timer.version;
 
-  // 시간이 다 되면 다음 페이즈로 전환. 참가자 모두 시도하지만 트랜잭션이 한 번만 반영합니다.
+  // 시간이 다 되면 다음 페이즈로 전환 및 사운드 알림. 참가자 모두 시도하지만 트랜잭션이 한 번만 반영합니다.
   // (동시 충돌을 줄이려고 참가자마다 0~0.6초 랜덤 지연)
   useEffect(() => {
     if (!isExpired || !roomId || version === undefined) return;
+    playTimerChimeSound();
     const timeoutId = setTimeout(() => {
       advanceIfExpired(roomId, version, Date.now() + serverOffsetMs).catch((err) =>
         console.error("타이머 페이즈 전환 실패:", err)
