@@ -127,7 +127,7 @@ export async function fetchDailyStats(
   const db = getDb();
   const firestoreMap = new Map<string, any>();
 
-  if (uid) {
+  if (uid && typeof uid === "string" && uid.trim().length > 3) {
     try {
       const statsCol = collection(db, "users", uid, "daily_stats");
       const q = query(statsCol, orderBy("date", "desc"), limit(days));

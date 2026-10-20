@@ -22,7 +22,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if true;
 
-      match /posture_logs/{logId} {
+      match /{subcollection=**} {
         allow read, write: if true;
       }
     }
