@@ -35,8 +35,8 @@ export function ParticipantCard({ participant, isMe = false }: { participant: Pa
   return <article className={`participant-card ${isMe ? 'my-card' : ''} ${participant.status === 'away' ? 'is-away' : ''}`}>
     <div className="participant-top"><span className={`person-badge ${isMe ? 'me-badge' : ''}`}>{isMe ? '나' : '참여자'}</span><span className={`status status-${participant.status}`}><span />{statusLabels[participant.status]}</span></div>
     {isMe ? <div className="snapshot-area">
-      {participant.snapshotUrl ? <img src={participant.snapshotUrl} alt={`${participant.nickname}님의 자세 스냅샷`} className="snapshot-image" /> : <><Avatar kind={avatar} /><span className="snapshot-caption"><Icon name="camera" size={13} />스냅샷 연결 예정</span></>}
-    </div> : <div className="sample-avatar">{participant.snapshotUrl ? <img src={participant.snapshotUrl} alt={`${participant.nickname}님의 자세 스냅샷`} className="snapshot-image" /> : <Avatar kind={avatar} />}</div>}
+      {participant.snapshotUrl ? <img src={participant.snapshotUrl} alt={`${participant.nickname}님의 자세 스냅샷`} className="snapshot-image" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none' }} /> : <><Avatar kind={avatar} /><span className="snapshot-caption"><Icon name="camera" size={13} />스냅샷 연결 예정</span></>}
+    </div> : <div className="sample-avatar">{participant.snapshotUrl ? <img src={participant.snapshotUrl} alt={`${participant.nickname}님의 자세 스냅샷`} className="snapshot-image" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none' }} /> : <Avatar kind={avatar} />}</div>}
     <h3 className="participant-name">{participant.nickname}</h3>
     <div className="posture-line"><span><Icon name="leaf" size={15} />자세 상태</span><span className={posture.className}>{posture.text}</span></div>
   </article>

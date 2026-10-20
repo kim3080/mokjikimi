@@ -158,7 +158,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
         <div className="room-meta">
           <span>방 코드 <strong>{room.id}</strong></span>
           <span className="meta-divider" />
-          <button className="copy-button" onClick={copyInviteLink}>
+          <button type="button" className="copy-button" onClick={copyInviteLink}>
             <Icon name={copied ? 'check' : 'link'} size={13} />
             {copied ? '복사했어요' : '초대 링크 복사'}
           </button>
@@ -182,7 +182,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
           </button>
         </div>
       </div>
-      <button className="leave-button" onClick={() => router.push('/')}><Icon name="door" size={17} />방 나가기</button>
+      <button type="button" className="leave-button" onClick={() => router.push('/')}><Icon name="door" size={17} />방 나가기</button>
     </div>
     <div className="study-grid">
       <div className="timer-column space-y-4">

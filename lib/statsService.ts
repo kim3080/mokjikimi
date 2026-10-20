@@ -36,7 +36,7 @@ function buildStatsAndKPI(
   days: number = 7,
   firestoreMap: Map<string, any> = new Map()
 ): { stats: DailyPostureStat[]; kpi: PostureSummaryKPI } {
-  const today = new Date("2026-10-20T09:00:00");
+  const today = new Date();
   const stats: DailyPostureStat[] = [];
 
   for (let i = days - 1; i >= 0; i--) {

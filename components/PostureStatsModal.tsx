@@ -49,7 +49,25 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
     setMounted(true)
   }, [])
 
-  // 모달이 열릴 때 백그라운드에서 최신 Firestore 데이터를 무깜빡임(Silent SWR)으로 갱신 (로그인 회원만)
+  // 모달이 열려 있을 때 배경 스크롤 방지 및 Escape 키 닫기 이벤트 등록 (로그인 여부 무관)
+  useEffect(() => {
+    if (!isOpen) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current?.()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  // 모달이 열릴 때 백그라운드에서 최신 Firestore 데이터를 무깜빡임(Silent SWR)으로 갱신 (로그인 회원 전용)
   useEffect(() => {
     if (!isOpen || !isLoggedIn) return
 
@@ -65,13 +83,8 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
         console.warn('통계 백그라운드 동기화 알림:', err)
       })
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current?.()
-    }
-    window.addEventListener('keydown', handleKeyDown)
     return () => {
       cancelled = true
-      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, isLoggedIn, effectiveUid])
 
@@ -191,6 +204,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             </div>
           </div>
           <button
+            type="button"
             onClick={() => onCloseRef.current?.()}
             className="p-2 text-[#7e867e] hover:text-[#253e30] hover:bg-[#eef2e6] rounded-lg transition-colors"
             aria-label="닫기"
