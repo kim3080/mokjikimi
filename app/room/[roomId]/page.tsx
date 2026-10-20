@@ -42,6 +42,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
   const { user, isLoading: isAuthLoading, error: authError } = useAnonymousUser()
   const [nickname, setNickname] = useNickname()
   const uid = user?.uid ?? null
+  const isLoggedIn = !!user && !user.isAnonymous
 
   const { room, members, isLoading, notFound, error, serverOffsetMs } = useStudyRoom(roomId, uid, nickname)
   const { remainingMs, serverNow } = useSharedTimer(room, serverOffsetMs)
@@ -175,9 +176,9 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
             type="button"
             className="copy-button"
             onClick={() => setShowStatsModal(true)}
-            title="나의 주간 자세 및 집중 통계 대시보드 열기"
+            title={isLoggedIn ? '나의 주간 자세 및 집중 통계 대시보드 열기' : '로그인 후 자세 통계 조회 가능'}
           >
-            📊 내 자세 통계
+            {isLoggedIn ? '📊 내 자세 통계' : '🔒 내 자세 통계 (로그인 필요)'}
           </button>
         </div>
       </div>
