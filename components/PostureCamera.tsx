@@ -88,34 +88,72 @@ export function PostureCamera({
   const isWebcamRunning = isDetecting && showWebcamView
   const isSkeletonRunning = isDetecting && showSkeletonView
 
+  // '내 자세 지킴이' 화면 확대 모드 (기본값: true - 크게 보기)
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  const toggleExpanded = () => {
+    setIsExpanded((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('mokjikimi_camera_expanded', String(next))
+      } catch {}
+      return next
+    })
+  }
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('mokjikimi_camera_expanded')
+      if (saved !== null) {
+        setIsExpanded(saved === 'true')
+      }
+    } catch {}
+  }, [])
+
   return (
     <section className="camera-panel" aria-labelledby="camera-title">
-      <div className="timer-heading flex justify-between items-center">
-        <h2 id="camera-title">
-          <Icon name="video" size={19} />내 자세 지킴이
-        </h2>
-        {isDetecting && (
+      <div className="timer-heading flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center gap-2">
+          <h2 id="camera-title" className="flex items-center gap-2 text-base font-bold text-[#253e30]">
+            <Icon name="video" size={20} />
+            <span>내 자세 지킴이</span>
+          </h2>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            {isExpanded ? '🗖 화면 확대 모드' : '⊞ 표준 분할 모드'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={handleCalibrate}
-            className={`text-[11px] font-bold px-2 py-0.5 rounded border transition-all ${
-              calibratedSuccess
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : isCalibrated
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100'
-            }`}
+            onClick={toggleExpanded}
+            className="text-xs font-bold px-2.5 py-1 rounded-lg border border-[#d2dfc6] bg-[#f4f7ee] hover:bg-[#eaf1e2] text-[#285b46] transition-colors shadow-2xs"
+            title={isExpanded ? '기본 나란히 보기로 변경' : '화면 크게 보기로 확대'}
           >
-            {calibratedSuccess ? '✅ 영점 등록 완료!' : isCalibrated ? '🎯 영점 재설정' : '🎯 바른 자세 영점 맞추기'}
+            {isExpanded ? '⊞ 나란히 보기' : '🗖 화면 크게 보기'}
           </button>
-        )}
+          {isDetecting && (
+            <button
+              type="button"
+              onClick={handleCalibrate}
+              className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all shadow-2xs ${
+                calibratedSuccess
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : isCalibrated
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100'
+              }`}
+            >
+              {calibratedSuccess ? '✅ 영점 등록 완료!' : isCalibrated ? '🎯 영점 재설정' : '🎯 바른 자세 영점 맞추기'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 듀얼 모니터링 2개 뷰포트 (좌: 실시간 원본 웹캠 / 우: AI 스켈레톤 골격 분석) */}
-      <div className="camera-view-dual">
+      <div className={`camera-view-dual ${isExpanded ? 'is-expanded' : ''}`}>
         {/* 모니터링 1: 실시간 원본 웹캠 뷰 */}
         <div className="camera-view-item flex flex-col justify-between">
-          <div className="flex items-center justify-between p-2 z-10">
+          <div className="flex items-center justify-between p-2.5 z-10">
             <span className="camera-badge-tag bg-slate-900/80 text-slate-200 border border-slate-700/60">
               📹 뷰 1 · 실시간 원본 웹캠
             </span>
@@ -123,7 +161,7 @@ export function PostureCamera({
               type="button"
               onClick={handleToggleWebcam}
               disabled={isModelLoading}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors shadow-sm ml-auto z-20 ${
+              className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors shadow-sm ml-auto z-20 ${
                 isWebcamRunning
                   ? 'bg-rose-600 hover:bg-rose-700 text-white'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -137,7 +175,7 @@ export function PostureCamera({
 
           {!isWebcamRunning && (
             <div className="camera-placeholder">
-              <Icon name="camera" size={22} />
+              <Icon name="camera" size={24} />
               <p className="font-medium text-xs">
                 {isModelLoading
                   ? 'AI 모델 준비 중…'
@@ -168,7 +206,7 @@ export function PostureCamera({
 
         {/* 모니터링 2: AI 스켈레톤 및 거북목 골격 분석 뷰 */}
         <div className="camera-view-item flex flex-col justify-between">
-          <div className="flex items-center justify-between p-2 z-10">
+          <div className="flex items-center justify-between p-2.5 z-10">
             <span className="camera-badge-tag bg-indigo-950/80 text-indigo-300 border border-indigo-700/60">
               🤖 뷰 2 · AI 골격 추적 & 진단
             </span>
@@ -176,7 +214,7 @@ export function PostureCamera({
               type="button"
               onClick={handleToggleSkeleton}
               disabled={isModelLoading}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors shadow-sm ml-auto z-20 ${
+              className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors shadow-sm ml-auto z-20 ${
                 isSkeletonRunning
                   ? 'bg-rose-600 hover:bg-rose-700 text-white'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -190,7 +228,7 @@ export function PostureCamera({
 
           {!isSkeletonRunning && (
             <div className="camera-placeholder">
-              <Icon name="leaf" size={22} />
+              <Icon name="leaf" size={24} />
               <p className="font-medium text-xs">
                 {isModelLoading
                   ? 'AI 관절 추적망 초기화 중…'
@@ -203,7 +241,7 @@ export function PostureCamera({
           )}
 
           {isSkeletonRunning && isSlouching && (
-            <div className="absolute bottom-2 inset-x-2 bg-red-600/90 text-white py-1 px-2 rounded text-center text-[11px] font-semibold backdrop-blur-sm shadow-md animate-pulse z-10 pointer-events-none">
+            <div className="absolute bottom-3 inset-x-3 bg-red-600/90 text-white py-1.5 px-3 rounded-lg text-center text-xs font-bold backdrop-blur-sm shadow-md animate-pulse z-10 pointer-events-none">
               ⚠️ 거북목 감지! 턱을 당기세요
             </div>
           )}
@@ -213,9 +251,9 @@ export function PostureCamera({
               type="button"
               onClick={captureSnapshot}
               title="자세 스냅샷 갱신"
-              className="absolute top-8 right-2 bg-black/50 hover:bg-black/75 text-white p-1 rounded transition-colors z-10"
+              className="absolute top-9 right-2.5 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-md transition-colors z-10"
             >
-              <Icon name="camera" size={13} />
+              <Icon name="camera" size={14} />
             </button>
           )}
         </div>
