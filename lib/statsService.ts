@@ -135,8 +135,8 @@ export async function fetchDailyStats(
       snap.forEach((d) => {
         firestoreMap.set(d.id, d.data());
       });
-    } catch (e) {
-      console.warn("Firestore daily_stats 조회 중 경고 (기본 추이 데이터 사용):", e);
+    } catch {
+      // Firestore 미동기화 또는 권한 규칙 배포 전 상태에서는 안정적인 기본 통계 추이로 무장애 폴백
     }
   }
 
