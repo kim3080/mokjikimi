@@ -27,38 +27,17 @@ export interface PostureSummaryKPI {
 
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
-/**
- * 최근 N일간의 일별 자세 및 집중 통계 데이터 조회 (Recharts 차트 전용)
- * Firestore users/{uid}/daily_stats 실데이터와 기본 학습 추이 데이터를 자연스럽게 합성합니다.
- */
-export async function fetchDailyStats(
-  uid: string,
-  days: number = 7
-): Promise<{ stats: DailyPostureStat[]; kpi: PostureSummaryKPI }> {
-  const db = getDb();
-  const firestoreMap = new Map<string, any>();
+// 기본 시뮬레이션 베이스라인 (사용자 누적 성장에 따른 점진적 개선 패턴)
+const BASE_SCORES = [74, 79, 83, 80, 88, 91, 93];
+const BASE_MINUTES = [45, 60, 50, 75, 90, 85, 100];
+const BASE_WARNINGS = [8, 6, 5, 7, 3, 2, 1];
 
-  if (uid) {
-    try {
-      const statsCol = collection(db, "users", uid, "daily_stats");
-      const q = query(statsCol, orderBy("date", "desc"), limit(days));
-      const snap = await getDocs(q);
-      snap.forEach((d) => {
-        firestoreMap.set(d.id, d.data());
-      });
-    } catch (e) {
-      console.warn("Firestore daily_stats 조회 중 경고 (기본 추이 데이터 사용):", e);
-    }
-  }
-
-  // 기준일: 2026년 10월 20일 (8주차)
+function buildStatsAndKPI(
+  days: number = 7,
+  firestoreMap: Map<string, any> = new Map()
+): { stats: DailyPostureStat[]; kpi: PostureSummaryKPI } {
   const today = new Date("2026-10-20T09:00:00");
   const stats: DailyPostureStat[] = [];
-
-  // 기본 시뮬레이션 베이스라인 (사용자 누적 성장에 따른 점진적 개선 패턴)
-  const baseScores = [74, 79, 83, 80, 88, 91, 93];
-  const baseMinutes = [45, 60, 50, 75, 90, 85, 100];
-  const baseWarnings = [8, 6, 5, 7, 3, 2, 1];
 
   for (let i = days - 1; i >= 0; i--) {
     const targetDate = new Date(today);
@@ -75,11 +54,11 @@ export async function fetchDailyStats(
 
     // Firestore에 실제 저장된 기록이 있으면 우선 반영
     const realData = firestoreMap.get(dateKey);
-    const scoreIndex = (days - 1 - i) % baseScores.length;
+    const scoreIndex = (days - 1 - i) % BASE_SCORES.length;
 
-    const score = realData?.avgScore ?? baseScores[scoreIndex];
-    const minutes = realData?.totalMinutes ?? baseMinutes[scoreIndex];
-    const warnings = realData?.totalWarnings ?? baseWarnings[scoreIndex];
+    const score = realData?.avgScore ?? BASE_SCORES[scoreIndex];
+    const minutes = realData?.totalMinutes ?? BASE_MINUTES[scoreIndex];
+    const warnings = realData?.totalWarnings ?? BASE_WARNINGS[scoreIndex];
     const sessions = realData?.sessionsCount ?? (minutes > 0 ? Math.ceil(minutes / 25) : 0);
 
     stats.push({
@@ -128,4 +107,38 @@ export async function fetchDailyStats(
   };
 
   return { stats, kpi };
+}
+
+/**
+ * 초기 렌더링 시 깜빡임 없이 즉각 표시할 수 있는 동기 기본 통계 데이터
+ */
+export function getInitialStats(days: number = 7): { stats: DailyPostureStat[]; kpi: PostureSummaryKPI } {
+  return buildStatsAndKPI(days);
+}
+
+/**
+ * 최근 N일간의 일별 자세 및 집중 통계 데이터 비동기 조회 (Recharts 차트 전용)
+ * Firestore users/{uid}/daily_stats 실데이터와 기본 학습 추이 데이터를 자연스럽게 합성합니다.
+ */
+export async function fetchDailyStats(
+  uid: string,
+  days: number = 7
+): Promise<{ stats: DailyPostureStat[]; kpi: PostureSummaryKPI }> {
+  const db = getDb();
+  const firestoreMap = new Map<string, any>();
+
+  if (uid) {
+    try {
+      const statsCol = collection(db, "users", uid, "daily_stats");
+      const q = query(statsCol, orderBy("date", "desc"), limit(days));
+      const snap = await getDocs(q);
+      snap.forEach((d) => {
+        firestoreMap.set(d.id, d.data());
+      });
+    } catch (e) {
+      console.warn("Firestore daily_stats 조회 중 경고 (기본 추이 데이터 사용):", e);
+    }
+  }
+
+  return buildStatsAndKPI(days, firestoreMap);
 }

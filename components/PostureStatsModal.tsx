@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AreaChart,
   Area,
@@ -14,7 +14,12 @@ import {
   Legend,
 } from 'recharts'
 import { Icon } from './Icon'
-import { fetchDailyStats, type DailyPostureStat, type PostureSummaryKPI } from '@/lib/statsService'
+import {
+  fetchDailyStats,
+  getInitialStats,
+  type DailyPostureStat,
+  type PostureSummaryKPI,
+} from '@/lib/statsService'
 
 interface PostureStatsModalProps {
   isOpen: boolean
@@ -24,52 +29,57 @@ interface PostureStatsModalProps {
 
 export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsModalProps) {
   const [activeTab, setActiveTab] = useState<'score' | 'time'>('score')
-  const [data, setData] = useState<{ stats: DailyPostureStat[]; kpi: PostureSummaryKPI } | null>(null)
-  const [loading, setLoading] = useState(true)
+  // 초기 렌더링 시에도 깜빡임이 전혀 없도록 기본 통계 데이터로 즉시 동기 초기화
+  const [data, setData] = useState<{ stats: DailyPostureStat[]; kpi: PostureSummaryKPI }>(() =>
+    getInitialStats(7)
+  )
   const [mounted, setMounted] = useState(false)
+
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  // 모달이 열릴 때 백그라운드에서 최신 Firestore 데이터를 무깜빡임(Silent SWR)으로 갱신
   useEffect(() => {
     if (!isOpen) return
 
     let cancelled = false
-    setLoading(true)
 
     fetchDailyStats(uid || '')
       .then((res) => {
-        if (!cancelled) {
+        if (!cancelled && res) {
           setData(res)
-          setLoading(false)
         }
       })
       .catch((err) => {
-        console.error('통계 데이터 로드 실패:', err)
-        if (!cancelled) setLoading(false)
+        console.warn('통계 백그라운드 동기화 알림:', err)
       })
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current?.()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       cancelled = true
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, uid, onClose])
+  }, [isOpen, uid])
 
   if (!isOpen || !mounted) return null
 
-  const stats = data?.stats ?? []
-  const kpi = data?.kpi
+  const stats = data.stats
+  const kpi = data.kpi
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget) onCloseRef.current?.()
       }}
       role="dialog"
       aria-modal="true"
@@ -92,7 +102,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => onCloseRef.current?.()}
             className="p-2 text-[#7e867e] hover:text-[#253e30] hover:bg-[#eef2e6] rounded-lg transition-colors"
             aria-label="닫기"
           >
@@ -107,10 +117,10 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             <div className="p-3.5 rounded-xl bg-[#f5f8f0] border border-[#e2e9db]">
               <span className="text-xs text-[#637d68] font-medium">주간 평균 자세</span>
               <div className="flex items-baseline gap-1.5 mt-1.5">
-                <span className="text-2xl font-bold text-[#285b46]">{kpi?.weeklyAvgScore ?? 90}</span>
+                <span className="text-2xl font-bold text-[#285b46]">{kpi.weeklyAvgScore}</span>
                 <span className="text-xs font-semibold text-[#8aaa71]">점</span>
                 <span className="ml-auto text-xs font-bold px-1.5 py-0.5 rounded bg-[#285b46] text-white">
-                  {kpi?.postureGrade ?? 'A'}
+                  {kpi.postureGrade}
                 </span>
               </div>
             </div>
@@ -119,11 +129,11 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
               <span className="text-xs text-[#637d68] font-medium">총 집중 시간</span>
               <div className="flex items-baseline gap-1 mt-1.5">
                 <span className="text-2xl font-bold text-[#285b46]">
-                  {Math.round((kpi?.totalFocusMinutes ?? 505) / 60 * 10) / 10}
+                  {Math.round((kpi.totalFocusMinutes / 60) * 10) / 10}
                 </span>
                 <span className="text-xs font-semibold text-[#637d68]">시간</span>
                 <span className="ml-auto text-[11px] text-[#8aaa71]">
-                  ({kpi?.totalFocusMinutes ?? 505}분)
+                  ({kpi.totalFocusMinutes}분)
                 </span>
               </div>
             </div>
@@ -132,7 +142,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
               <span className="text-xs text-[#b46b2b] font-medium">거북목 교정 방지</span>
               <div className="flex items-baseline gap-1 mt-1.5">
                 <span className="text-2xl font-bold text-[#b46b2b]">
-                  {kpi?.totalWarningPrevented ?? 32}
+                  {kpi.totalWarningPrevented}
                 </span>
                 <span className="text-xs font-semibold text-[#b46b2b]">회</span>
                 <span className="ml-auto text-[11px] text-[#e07a38] font-medium">경각심 유지</span>
@@ -142,9 +152,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             <div className="p-3.5 rounded-xl bg-[#f0f6fc] border border-[#d2e3f8]">
               <span className="text-xs text-[#3969a8] font-medium">연속 실천 일수</span>
               <div className="flex items-baseline gap-1 mt-1.5">
-                <span className="text-2xl font-bold text-[#2b589a]">
-                  {kpi?.streakDays ?? 6}
-                </span>
+                <span className="text-2xl font-bold text-[#2b589a]">{kpi.streakDays}</span>
                 <span className="text-xs font-semibold text-[#3969a8]">일째</span>
                 <span className="ml-auto text-[11px] text-[#3b82f6] font-medium">🔥 스트릭</span>
               </div>
@@ -180,13 +188,9 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             <span className="text-[11px] text-[#8e968b]">최근 7일 모니터링 분석</span>
           </div>
 
-          {/* 차트 영역 */}
+          {/* 차트 영역 (깜빡임 없이 즉시 고정 렌더링) */}
           <div className="h-[280px] w-full bg-[#fbfcf8] border border-[#e8ece0] rounded-xl p-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-xs text-[#7e867e]">
-                통계 데이터를 집계하고 있어요…
-              </div>
-            ) : activeTab === 'score' ? (
+            {activeTab === 'score' ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats} margin={{ top: 10, right: 20, left: -15, bottom: 0 }}>
                   <defs>
@@ -205,8 +209,12 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                         return (
                           <div className="bg-white border border-[#dde3d7] p-2.5 rounded-lg shadow-md text-xs space-y-1">
                             <strong className="text-[#253e30] block">{d.date}</strong>
-                            <div className="text-[#285b46] font-bold">평균 자세 점수: {d.avgScore}점</div>
-                            <div className="text-[#7e867e]">집중 시간: {d.focusMinutes}분 · 경고 {d.warningCount}회</div>
+                            <div className="text-[#285b46] font-bold">
+                              평균 자세 점수: {d.avgScore}점
+                            </div>
+                            <div className="text-[#7e867e]">
+                              집중 시간: {d.focusMinutes}분 · 경고 {d.warningCount}회
+                            </div>
                           </div>
                         )
                       }
@@ -223,6 +231,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                     fill="url(#scoreGradient)"
                     dot={{ r: 4, fill: '#285b46', strokeWidth: 1.5, stroke: '#fff' }}
                     activeDot={{ r: 6, fill: '#8aaa71' }}
+                    isAnimationActive={false}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -232,7 +241,12 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                   <CartesianGrid strokeDasharray="3 3" stroke="#e8ece2" />
                   <XAxis dataKey="displayDate" tick={{ fontSize: 11, fill: '#6e776e' }} />
                   <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#6e776e' }} unit="분" />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#b46b2b' }} unit="회" />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fontSize: 11, fill: '#b46b2b' }}
+                    unit="회"
+                  />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -240,8 +254,12 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                         return (
                           <div className="bg-white border border-[#dde3d7] p-2.5 rounded-lg shadow-md text-xs space-y-1">
                             <strong className="text-[#253e30] block">{d.date}</strong>
-                            <div className="text-[#285b46] font-medium">누적 집중: {d.focusMinutes}분 ({d.sessionCount}세션)</div>
-                            <div className="text-[#b46b2b] font-medium">거북목 경고: {d.warningCount}회</div>
+                            <div className="text-[#285b46] font-medium">
+                              누적 집중: {d.focusMinutes}분 ({d.sessionCount}세션)
+                            </div>
+                            <div className="text-[#b46b2b] font-medium">
+                              거북목 경고: {d.warningCount}회
+                            </div>
                           </div>
                         )
                       }
@@ -249,8 +267,22 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-                  <Bar yAxisId="left" dataKey="focusMinutes" name="집중 시간 (분)" fill="#3a7d5a" radius={[4, 4, 0, 0]} />
-                  <Bar yAxisId="right" dataKey="warningCount" name="경고 횟수 (회)" fill="#e67e3a" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="focusMinutes"
+                    name="집중 시간 (분)"
+                    fill="#3a7d5a"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="warningCount"
+                    name="경고 횟수 (회)"
+                    fill="#e67e3a"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -263,9 +295,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
             </span>
             <div className="space-y-1 text-xs">
               <strong className="text-[#253e30] font-bold">목지키미 AI 코칭 진단 리포트</strong>
-              <p className="text-[#556353] leading-relaxed">
-                {kpi?.adviceComment ?? '바른 자세와 뽀모도로 습관이 조화롭게 형성되고 있습니다.'}
-              </p>
+              <p className="text-[#556353] leading-relaxed">{kpi.adviceComment}</p>
             </div>
           </div>
         </div>
@@ -274,7 +304,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
         <div className="px-6 py-3.5 border-t border-[#e7eae2] bg-[#fbfcf8] flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current?.()}
             className="px-4 py-2 text-xs font-bold text-[#285b46] bg-[#eef2e6] hover:bg-[#e2ebd6] rounded-lg transition-colors"
           >
             대시보드 닫기
