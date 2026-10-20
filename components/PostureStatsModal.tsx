@@ -28,7 +28,7 @@ interface PostureStatsModalProps {
 }
 
 export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsModalProps) {
-  const [activeTab, setActiveTab] = useState<'score' | 'time'>('score')
+  const [activeTab, setActiveTab] = useState<'score' | 'time' | 'table'>('score')
   // 초기 렌더링 시에도 깜빡임이 전혀 없도록 기본 통계 데이터로 즉시 동기 초기화
   const [data, setData] = useState<{ stats: DailyPostureStat[]; kpi: PostureSummaryKPI }>(() =>
     getInitialStats(7)
@@ -184,12 +184,23 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
               >
                 ⏱️ 집중 시간 & 경고 빈도
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('table')}
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'table'
+                    ? 'bg-[#285b46] text-white shadow-sm'
+                    : 'bg-[#f0f3eb] text-[#6b756b] hover:bg-[#e4ebd9]'
+                }`}
+              >
+                📋 일별 상세 통계표
+              </button>
             </div>
             <span className="text-[11px] text-[#8e968b]">최근 7일 모니터링 분석</span>
           </div>
 
-          {/* 차트 영역 (깜빡임 없이 즉시 고정 렌더링) */}
-          <div className="h-[280px] w-full bg-[#fbfcf8] border border-[#e8ece0] rounded-xl p-4">
+          {/* 차트 및 통계표 영역 (깜빡임 없이 즉시 고정 렌더링) */}
+          <div className="h-[280px] w-full bg-[#fbfcf8] border border-[#e8ece0] rounded-xl p-3 sm:p-4">
             {activeTab === 'score' ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats} margin={{ top: 10, right: 20, left: -15, bottom: 0 }}>
@@ -235,7 +246,7 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : (
+            ) : activeTab === 'time' ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats} margin={{ top: 10, right: 20, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e8ece2" />
@@ -285,6 +296,56 @@ export function PostureStatsModal({ isOpen, onClose, uid = '' }: PostureStatsMod
                   />
                 </BarChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="h-full overflow-y-auto pr-1">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="sticky top-0 bg-[#f4f7ee] text-[#4d5e4b] font-bold border-b border-[#dde5d3]">
+                    <tr>
+                      <th className="py-2 px-2.5">날짜</th>
+                      <th className="py-2 px-2 text-center">자세 점수</th>
+                      <th className="py-2 px-2 text-center">누적 집중</th>
+                      <th className="py-2 px-2 text-center">거북목 경고</th>
+                      <th className="py-2 px-2 text-center">세션</th>
+                      <th className="py-2 px-2.5 text-center">상태 등급</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#edf1e8]">
+                    {stats.map((row) => (
+                      <tr key={row.date} className="hover:bg-[#f6f9f2] transition-colors">
+                        <td className="py-2 px-2.5 font-semibold text-[#253e30]">
+                          {row.displayDate}
+                          <span className="text-[10px] text-[#8a9488] block">{row.date}</span>
+                        </td>
+                        <td className="py-2 px-2 text-center font-bold text-[#285b46]">
+                          {row.avgScore}점
+                        </td>
+                        <td className="py-2 px-2 text-center text-[#4b5563]">
+                          {row.focusMinutes}분
+                        </td>
+                        <td className="py-2 px-2 text-center font-semibold text-[#c86228]">
+                          {row.warningCount}회
+                        </td>
+                        <td className="py-2 px-2 text-center text-[#556353]">
+                          {row.sessionCount}회
+                        </td>
+                        <td className="py-2 px-2.5 text-center">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              row.avgScore >= 90
+                                ? 'bg-[#d8f0d8] text-[#1c692b]'
+                                : row.avgScore >= 80
+                                ? 'bg-[#fef3c7] text-[#92400e]'
+                                : 'bg-[#fee2e2] text-[#b91c1c]'
+                            }`}
+                          >
+                            {row.avgScore >= 90 ? '최우수' : row.avgScore >= 80 ? '양호' : '주의'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
