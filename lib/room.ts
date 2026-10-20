@@ -44,6 +44,7 @@ export interface Member {
   uid: string;
   nickname: string;
   posture: PostureStatus | null; // null = 카메라 꺼짐
+  snapshotUrl?: string | null; // 거북목/주의 시 캡처된 최신 스냅샷
   joinedAt: Timestamp | null;
   lastSeen: Timestamp | null;
 }
@@ -131,6 +132,7 @@ export async function joinRoom(roomId: string, uid: string, nickname: string) {
   await setDoc(memberRef(roomId, uid), {
     nickname,
     posture: null,
+    snapshotUrl: null,
     joinedAt: serverTimestamp(),
     lastSeen: serverTimestamp(),
   });
@@ -144,8 +146,24 @@ export async function sendHeartbeat(roomId: string, uid: string) {
   await updateDoc(memberRef(roomId, uid), { lastSeen: serverTimestamp() });
 }
 
-export async function updatePosture(roomId: string, uid: string, posture: PostureStatus | null) {
-  await updateDoc(memberRef(roomId, uid), { posture });
+export async function updatePosture(
+  roomId: string,
+  uid: string,
+  posture: PostureStatus | null,
+  snapshotUrl?: string | null
+) {
+  const updateData: Record<string, any> = { posture, lastSeen: serverTimestamp() };
+  if (snapshotUrl !== undefined) {
+    updateData.snapshotUrl = snapshotUrl;
+  }
+  await updateDoc(memberRef(roomId, uid), updateData);
+}
+
+export async function updateSnapshot(roomId: string, uid: string, snapshotUrl: string | null) {
+  await updateDoc(memberRef(roomId, uid), {
+    snapshotUrl,
+    lastSeen: serverTimestamp(),
+  });
 }
 
 // ----------------------------------------------------

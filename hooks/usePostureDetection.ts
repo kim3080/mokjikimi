@@ -67,6 +67,8 @@ export function usePostureDetection(): UsePostureDetectionReturn {
   } | null>(null);
 
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  const lastDangerCaptureTimeRef = useRef<number>(0);
+  const captureSnapshotRef = useRef<(() => string | null) | null>(null);
 
   // 영점 등록 함수
   const calibrate = useCallback((): boolean => {
@@ -207,6 +209,17 @@ export function usePostureDetection(): UsePostureDetectionReturn {
             // 캔버스 위에 골격 뼈대 및 어깨 수평선, 슬라우칭 필터 실시간 렌더링
             if (calculatedMetrics) {
               drawLandmarksAndFilter(ctx, canvas.width, canvas.height, currentLandmarks, calculatedMetrics);
+
+              // [8주차] 거북목/자세 붕괴(danger/warning) 실시간 감지 시 박제 스냅샷 자동 캡처 (4초 쿨다운)
+              if (calculatedMetrics.status === "danger" || calculatedMetrics.status === "warning") {
+                const now = performance.now();
+                if (now - lastDangerCaptureTimeRef.current > 4000) {
+                  lastDangerCaptureTimeRef.current = now;
+                  setTimeout(() => {
+                    captureSnapshotRef.current?.();
+                  }, 120);
+                }
+              }
             }
           } else {
             // 사람이 감지되지 않는 경우 화면 청소 및 상태 초기화
@@ -529,6 +542,7 @@ export function usePostureDetection(): UsePostureDetectionReturn {
       return null;
     }
   }, []);
+  captureSnapshotRef.current = captureSnapshot;
 
   // ----------------------------------------------------
   // 7. 웹캠 장치 활성화 (카메라 온)

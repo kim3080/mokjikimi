@@ -9,6 +9,7 @@ import { TimerPanel } from '@/components/TimerPanel'
 import { ParticipantCard, type ParticipantStatus, type ParticipantView } from '@/components/ParticipantCard'
 import { PostureCamera } from '@/components/PostureCamera'
 import { AICoachCard } from '@/components/AICoachCard'
+import { PostureStatsModal } from '@/components/PostureStatsModal'
 import { FirebaseSetupNotice } from '@/components/FirebaseSetupNotice'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { ONLINE_THRESHOLD_MS, updatePosture, validateNickname, type Member, type PostureStatus, type Room } from '@/lib/room'
@@ -26,7 +27,13 @@ function toParticipant(member: Member, room: Room, serverNow: number, isMe: bool
   const status: ParticipantStatus = !isMe && idleMs > ONLINE_THRESHOLD_MS
     ? 'away'
     : room.timer.status === 'running' ? (room.timer.mode === 'work' ? 'focus' : 'break') : 'ready'
-  return { id: member.uid, nickname: member.nickname, status, posture: status === 'away' ? null : member.posture }
+  return {
+    id: member.uid,
+    nickname: member.nickname,
+    status,
+    posture: status === 'away' ? null : member.posture,
+    snapshotUrl: member.snapshotUrl || undefined,
+  }
 }
 
 export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
@@ -46,6 +53,8 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
   // 로컬 웹캠 자세 상태 및 스냅샷 URL 실시간 연동
   const [localPosture, setLocalPosture] = useState<PostureStatus | null>(null)
   const [mySnapshotUrl, setMySnapshotUrl] = useState<string | null>(null)
+  // [8주차] Recharts 누적 자세 & 집중 통계 모달 상태
+  const [showStatsModal, setShowStatsModal] = useState(false)
   // 힘들조 팀원 (박진규, 안정민) 목(Mock) 연동 시뮬레이션 상태 (React Hooks 규칙: early return 이전에 선언)
   const [showMockTeam, setShowMockTeam] = useState(true)
 
@@ -55,14 +64,31 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
 
   useEffect(() => { if (isRoomReady) heading.current?.focus() }, [isRoomReady])
 
-  // 자세 상태가 실제로 바뀌었을 때만 Firestore 에 기록
+  // [8주차] 자세 상태 및 박제 스냅샷이 변경되었을 때 Firestore 실시간 동기화
   const lastPostureRef = useRef<PostureStatus | null>(null)
+  const lastSnapshotRef = useRef<string | null>(null)
+
+  const syncPostureAndSnapshot = useCallback((posture: PostureStatus | null, snapshot: string | null) => {
+    if (!uid || !isRoomReady) return
+    if (lastPostureRef.current === posture && lastSnapshotRef.current === snapshot) return
+    lastPostureRef.current = posture
+    lastSnapshotRef.current = snapshot
+    updatePosture(roomId, uid, posture, snapshot ?? undefined).catch((err) =>
+      console.error('자세 및 스냅샷 동기화 실패:', err)
+    )
+  }, [roomId, uid, isRoomReady])
+
   const handlePostureChange = useCallback((posture: PostureStatus | null) => {
     setLocalPosture(posture)
-    if (!uid || !isRoomReady || lastPostureRef.current === posture) return
-    lastPostureRef.current = posture
-    updatePosture(roomId, uid, posture).catch((err) => console.error('자세 상태 동기화 실패:', err))
-  }, [roomId, uid, isRoomReady])
+    syncPostureAndSnapshot(posture, mySnapshotUrl)
+  }, [syncPostureAndSnapshot, mySnapshotUrl])
+
+  const handleSnapshotChange = useCallback((url: string | null) => {
+    setMySnapshotUrl(url)
+    if (url) {
+      syncPostureAndSnapshot(localPosture, url)
+    }
+  }, [syncPostureAndSnapshot, localPosture])
 
   async function copyInviteLink() {
     try {
@@ -144,6 +170,15 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
           >
             👥 팀원 연동 데모 {showMockTeam ? '활성' : '숨김'}
           </button>
+          <span className="meta-divider" />
+          <button
+            type="button"
+            className="copy-button"
+            onClick={() => setShowStatsModal(true)}
+            title="나의 주간 자세 및 집중 통계 대시보드 열기"
+          >
+            📊 내 자세 통계
+          </button>
         </div>
       </div>
       <button className="leave-button" onClick={() => router.push('/')}><Icon name="door" size={17} />방 나가기</button>
@@ -151,7 +186,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
     <div className="study-grid">
       <div className="timer-column space-y-4">
         <TimerPanel room={room} remainingMs={remainingMs} serverNow={serverNow} />
-        <PostureCamera onPostureChange={handlePostureChange} onSnapshotChange={setMySnapshotUrl} />
+        <PostureCamera onPostureChange={handlePostureChange} onSnapshotChange={handleSnapshotChange} />
         <AICoachCard />
         <div className="gentle-tip"><span className="tip-icon"><Icon name="leaf" size={21} /></span><div><strong>집중하는 동안, 나도 챙겨요.</strong><p>어깨는 가볍게 펴고, 화면은 눈높이에 맞춰 보세요.</p></div><span className="tip-decoration" aria-hidden="true">✧</span></div>
       </div>
@@ -175,6 +210,7 @@ export default function StudyRoomPage({ params }: PageProps<'/room/[roomId]'>) {
         <div className="privacy-note"><Icon name="shield" size={17} /><div><strong>영상은 내 기기를 떠나지 않아요</strong><p>다른 참여자에게는 타이머와 자세 상태만 공유돼요.<br />웹캠 영상은 내 기기 안에서 AI가 분석하며 외부로 전송되지 않아요.</p></div></div>
       </section>
     </div>
+    <PostureStatsModal isOpen={showStatsModal} onClose={() => setShowStatsModal(false)} uid={uid} />
   </main>
 }
 
