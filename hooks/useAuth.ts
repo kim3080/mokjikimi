@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { signInWithGoogle, logoutUser } from "@/lib/auth";
@@ -130,12 +130,12 @@ export function useAuth() {
     };
   }, []);
 
-let isLoggingIn = false;
+  const isLoggingInRef = useRef(false);
 
   // Google 소셜 로그인 실행
   const handleGoogleLogin = useCallback(async () => {
-    if (isLoggingIn) return null;
-    isLoggingIn = true;
+    if (isLoggingInRef.current) return null;
+    isLoggingInRef.current = true;
     globalLoading = true;
     globalError = null;
     notifySubscribers();
@@ -159,7 +159,7 @@ let isLoggingIn = false;
       notifySubscribers();
       return null;
     } finally {
-      isLoggingIn = false;
+      isLoggingInRef.current = false;
     }
   }, []);
 

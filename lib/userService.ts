@@ -10,7 +10,6 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where,
   type Timestamp,
 } from "firebase/firestore";
 import type { User } from "firebase/auth";

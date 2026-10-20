@@ -239,7 +239,7 @@ export function usePostureDetection(): UsePostureDetectionReturn {
   // ----------------------------------------------------
   // 4. 거북목 정밀 판별 기하학 알고리즘 (Y축 & Z축 분석)
   // ----------------------------------------------------
-  const analyzePosture = (landmarks: Landmark[]): PostureMetrics | null => {
+  function analyzePosture(landmarks: Landmark[]): PostureMetrics | null {
     // 랜드마크 맵핑
     // Nose: 0, Left Eye: 2, Right Eye: 5, Left Ear: 7, Right Ear: 8, Left Shoulder: 11, Right Shoulder: 12
     const leftEar = landmarks[7];
@@ -360,13 +360,13 @@ export function usePostureDetection(): UsePostureDetectionReturn {
   // ----------------------------------------------------
   // 5. 랜드마크 및 거북목 얼굴 오버레이 필터 실시간 렌더링
   // ----------------------------------------------------
-  const drawLandmarksAndFilter = (
+  function drawLandmarksAndFilter(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
     landmarks: Landmark[],
     metrics: PostureMetrics
-  ) => {
+  ) {
     ctx.clearRect(0, 0, width, height);
 
     // AI 골격 모니터링 뷰 전용 배경 채우기
@@ -542,7 +542,10 @@ export function usePostureDetection(): UsePostureDetectionReturn {
       return null;
     }
   }, []);
-  captureSnapshotRef.current = captureSnapshot;
+
+  useEffect(() => {
+    captureSnapshotRef.current = captureSnapshot;
+  }, [captureSnapshot]);
 
   // ----------------------------------------------------
   // 7. 웹캠 장치 활성화 (카메라 온)

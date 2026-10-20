@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useAICoach } from "@/hooks/useAICoach";
 import { useAuth } from "@/hooks/useAuth";
 import type { AIPersonaType } from "@/lib/ai/prompts";

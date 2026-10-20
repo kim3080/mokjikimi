@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Icon } from "@/components/Icon";
 
 export function SocialLoginButton() {
   const [mounted, setMounted] = useState(false);

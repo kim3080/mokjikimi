@@ -1,4 +1,4 @@
-import { buildPrompt, getMockResponse } from "../lib/ai/prompts";
+import { buildPrompt } from "../lib/ai/prompts";
 import { generateAICoachFeedback } from "../lib/ai/openai";
 
 async function runTests() {
